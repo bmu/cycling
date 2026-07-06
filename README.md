@@ -40,9 +40,12 @@ Argumente:
 
 Bereitet echte HTML-Ergebnisdateien als anonymisierte Testfixtures auf: Personen
 (Name, UCI-ID) und Vereine werden konsistent durch Fantasiewerte ersetzt,
-Event-/Orts-/Verbandsbezüge neutralisiert. Optional werden Fake-PDFs mit gleichen
-Basennamen erzeugt (Filter-Test). Die anonymisierten Fixtures liegen unter
-`tests/fixtures/html_results/`.
+Event-/Orts-/Verbandsbezüge neutralisiert. Zusätzlich werden die Altersklassen
+unter U17 weggelassen und die verbleibenden Klassen neu zu Rennen gruppiert
+(Rennen mit 1, 2 und mehr als 2 Läufen), damit auch die Dateinamen keinen
+Rückschluss auf den Ablauf des echten Rennens zulassen. Optional werden Fake-PDFs
+mit gleichen Basennamen erzeugt (Filter-Test). Die anonymisierten Fixtures liegen
+unter `tests/fixtures/html_results/`.
 
 ```bash
 uv run python tools/anonymize_results.py <quell-ordner> tests/fixtures/html_results

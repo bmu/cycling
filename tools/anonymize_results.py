@@ -9,6 +9,11 @@ Rennen übrig bleiben:
   Fantasiewerte ersetzt — dieselbe echte Person erhält überall dieselbe Fake-Identität.
 - Vereine werden konsistent ersetzt.
 - Event-Bezüge (Titel/Ort, Verband, Erstellungsdatum) werden neutralisiert.
+- Damit auch die Dateinamen keinen Rückschluss auf den Ablauf des Rennens
+  zulassen, werden die Altersklassen unter U17 weggelassen und die verbleibenden
+  Klassen neu zu Rennen zusammengefasst (siehe DROP_CODES / RACE_BY_CODE). Das
+  Namensschema "Rennen NN - 4.YZ Klasse" bleibt erhalten; die Rennnummer wird im
+  Dateinamen und in den internen Referenzen konsistent ersetzt.
 - Optional werden Fake-PDFs mit gleichen Basennamen erzeugt, um zu testen, dass
   ein Konverter nur die HTML-Dateien findet.
 
@@ -24,6 +29,7 @@ Aufruf:
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Annotated
 
@@ -64,7 +70,39 @@ FAKE_EVENT = "12. Radrenntag in Musterhausen Musterhausen"
 FAKE_FEDERATION = "Musterland Radsportverband"
 FAKE_CREATED = "erstellt von  01.01.2026 10:00"
 
+# --- Umgruppierung der Rennen ----------------------------------------------
+# Damit die Dateinamen keinen Rückschluss auf den tatsächlichen Ablauf des
+# Rennens zulassen, werden die Altersklassen unterhalb U17 weggelassen und die
+# verbleibenden Klassen (identifiziert über ihren BDR-Klassencode "4.YZ") neu
+# zu Rennen zusammengefasst. Das Namensschema "Rennen NN - 4.YZ Klasse" bleibt
+# erhalten; nur die Rennnummer (im Dateinamen und in den internen Referenzen)
+# wird ersetzt. Die Gruppierung ergibt Rennen mit 1, 2 und mehr als 2 Läufen.
+DROP_CODES = {"4.14", "4.15", "4.16", "4.17", "4.18", "4.19"}  # U15, U13, U11
+RACE_BY_CODE = {
+    "4.12": 1, "4.13": 1,                        # U17 m/w        -> 2 Läufe
+    "4.5": 2,                                     # Amateure       -> 1 Lauf
+    "4.24": 3,                                    # Masters (alle) -> 4 Läufe
+    "4.9": 4, "4.10": 4, "4.11": 4, "4.3": 4,     # Elite/U19/CT   -> 4 Läufe
+}
+
 PersonMap = dict[tuple[str, str], tuple[str, str]]
+
+
+def class_code(html_path: Path) -> str:
+    """Den Klassencode "4.YZ" aus dem Dateinamen ("Rennen NN - 4.YZ ...")."""
+    _, _, rest = html_path.stem.partition(" - ")
+    return rest.split(" ", 1)[0]
+
+
+def regrouped_name(html_path: Path, race: int) -> str:
+    """Neuer Dateiname mit der zugewiesenen Rennnummer, Klassenteil unverändert."""
+    _, _, rest = html_path.stem.partition(" - ")
+    return f"Rennen {race:02d} - {rest}"
+
+
+def renumber_race(html: str, race: int) -> str:
+    """Interne "Rennen NN"-Referenzen (Titel, Kopfzeile) auf die neue Nummer setzen."""
+    return re.sub(r"Rennen\s+\d+", f"Rennen {race:02d}", html)
 
 
 def _tokens(values: set[str]) -> set[str]:
@@ -249,18 +287,33 @@ def run(
     target.mkdir(parents=True, exist_ok=True)
     person_map, club_map, uci_map = build_maps(html_files)
 
+    written = 0
+    counts: dict[int, int] = {}
     for path in html_files:
-        (target / path.name).write_text(
-            anonymize_html(path, person_map, club_map, uci_map), encoding="utf-8"
-        )
+        code = class_code(path)
+        if code in DROP_CODES:
+            continue  # Altersklassen unter U17 weglassen.
+        race = RACE_BY_CODE.get(code)
+        if race is None:
+            print(f"Warnung: Klassencode '{code}' ohne Rennzuordnung, übersprungen: {path.name}")
+            continue
+
+        html = anonymize_html(path, person_map, club_map, uci_map)
+        html = renumber_race(html, race)
+        new_stem = regrouped_name(path, race)
+        (target / f"{new_stem}.html").write_text(html, encoding="utf-8")
         if pdf:
-            (target / f"{path.stem}.pdf").write_bytes(fake_pdf(path.stem))
+            (target / f"{new_stem}.pdf").write_bytes(fake_pdf(new_stem))
+        written += 1
+        counts[race] = counts.get(race, 0) + 1
 
     print(
-        f"✓ {len(html_files)} HTML anonymisiert"
-        + (f" + {len(html_files)} Fake-PDF" if pdf else "")
+        f"✓ {written} HTML anonymisiert"
+        + (f" + {written} Fake-PDF" if pdf else "")
         + f" → {target}"
     )
+    laeufe = ", ".join(f"Rennen {r:02d}: {counts[r]} Lauf/Läufe" for r in sorted(counts))
+    print(f"  Gruppierung: {laeufe}")
     print(
         f"  Personen: {len(person_map)}, Vereine: {len(club_map) - 1}, "
         f"UCI-IDs: {sum(1 for v in uci_map.values() if v.strip())}"
