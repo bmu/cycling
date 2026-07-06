@@ -37,14 +37,21 @@ Argumente:
 
 ### Weboberfläche
 
-Dieselbe HTML→Excel-Funktion als lokale Weboberfläche (FastAPI + Jinja2 + HTMX,
+Dieselbe HTML→Excel-Funktion als Weboberfläche (FastAPI + Jinja2 + HTMX,
 Design aus dem SemanticWorks Corporate Identity). HTML-Dateien im Browser
-auswählen/hineinziehen und die fertige Excel-Datei herunterladen — alles läuft
-lokal, es werden keine Daten hochgeladen.
+auswählen/hineinziehen und die fertige Excel-Datei herunterladen.
 
 ```bash
 uv run cycling-web            # Server auf http://127.0.0.1:8000
 ```
+
+**Datenschutz:** Die hochgeladenen Dateien werden ausschließlich im
+Arbeitsspeicher zur Umwandlung verarbeitet und **nicht gespeichert** (keine
+Datenbank, kein Schreiben auf die Platte, keine Drittanbieter-Ressourcen —
+Schriftart und HTMX sind selbst gehostet, strikte CSP). Beim öffentlichen
+Betrieb zusätzlich zu beachten: TLS, Impressum + Datenschutzerklärung auf der
+Seite und eine Aufbewahrungs-/Rechtsgrundlagen-Regelung für Server-Zugriffslogs
+(enthalten IP-Adressen).
 
 ## Werkzeuge (intern)
 
