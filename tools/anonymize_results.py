@@ -31,7 +31,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, NamedTuple
 
 import cyclopts
 from bs4 import BeautifulSoup, Tag
@@ -86,6 +86,14 @@ RACE_BY_CODE = {
 }
 
 PersonMap = dict[tuple[str, str], tuple[str, str]]
+
+
+class Identities(NamedTuple):
+    """Distinkte Personen/Vereine/UCI-IDs, die in einer Datei vorkommen."""
+
+    persons: set[tuple[str, str]]
+    clubs: set[str]
+    ucis: set[str]
 
 
 def class_code(html_path: Path) -> str:
@@ -205,9 +213,10 @@ def anonymize_html(
     person_map: PersonMap,
     club_map: dict[str, str],
     uci_map: dict[str, str],
-) -> str:
-    """Eine Datei anonymisieren und den neuen HTML-Text zurückgeben."""
+) -> tuple[str, Identities]:
+    """Eine Datei anonymisieren; neuen HTML-Text und die enthaltenen Identitäten."""
     soup = BeautifulSoup(path.read_text(encoding="utf-8"), "html.parser")
+    seen = Identities(set(), set(), set())
 
     for div in soup.find_all("div", class_="headerbig"):
         div.string = FAKE_EVENT
@@ -232,7 +241,13 @@ def anonymize_html(
             cells[idx["Verein"]].string = club_map.get(club, "")
             cells[idx["UCI-ID"]].string = uci_map.get(uci, uci)
 
-    return str(soup)
+            seen.persons.add((nach, vor))
+            if club:
+                seen.clubs.add(club)
+            if uci.strip():
+                seen.ucis.add(uci)
+
+    return str(soup), seen
 
 
 def fake_pdf(title: str) -> bytes:
@@ -289,6 +304,7 @@ def run(
 
     written = 0
     counts: dict[int, int] = {}
+    seen = Identities(set(), set(), set())
     for path in html_files:
         code = class_code(path)
         if code in DROP_CODES:
@@ -298,7 +314,7 @@ def run(
             print(f"Warnung: Klassencode '{code}' ohne Rennzuordnung, übersprungen: {path.name}")
             continue
 
-        html = anonymize_html(path, person_map, club_map, uci_map)
+        html, ids = anonymize_html(path, person_map, club_map, uci_map)
         html = renumber_race(html, race)
         new_stem = regrouped_name(path, race)
         (target / f"{new_stem}.html").write_text(html, encoding="utf-8")
@@ -306,6 +322,9 @@ def run(
             (target / f"{new_stem}.pdf").write_bytes(fake_pdf(new_stem))
         written += 1
         counts[race] = counts.get(race, 0) + 1
+        seen.persons.update(ids.persons)
+        seen.clubs.update(ids.clubs)
+        seen.ucis.update(ids.ucis)
 
     print(
         f"✓ {written} HTML anonymisiert"
@@ -315,8 +334,8 @@ def run(
     laeufe = ", ".join(f"Rennen {r:02d}: {counts[r]} Lauf/Läufe" for r in sorted(counts))
     print(f"  Gruppierung: {laeufe}")
     print(
-        f"  Personen: {len(person_map)}, Vereine: {len(club_map) - 1}, "
-        f"UCI-IDs: {sum(1 for v in uci_map.values() if v.strip())}"
+        f"  Personen: {len(seen.persons)}, Vereine: {len(seen.clubs)}, "
+        f"UCI-IDs: {len(seen.ucis)}"
     )
 
 
