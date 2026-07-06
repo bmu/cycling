@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import os
 from pathlib import Path
 
 from fastapi import FastAPI, Request, UploadFile
@@ -16,6 +17,8 @@ BASE_DIR = Path(__file__).resolve().parent
 XLSX_MEDIA_TYPE = (
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
+# Optionaler Link zur Datenschutzerklärung; beim Hosting per Env-Variable setzen.
+PRIVACY_URL = os.environ.get("CYCLING_PRIVACY_URL") or None
 
 app = FastAPI(title="Kommissärs Helferlein", docs_url=None, redoc_url=None, openapi_url=None)
 
@@ -41,7 +44,9 @@ async def security_headers(request: Request, call_next):  # type: ignore[no-unty
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request) -> HTMLResponse:
     """Startseite mit dem Upload-Formular."""
-    return templates.TemplateResponse(request=request, name="index.html", context={})
+    return templates.TemplateResponse(
+        request=request, name="index.html", context={"privacy_url": PRIVACY_URL}
+    )
 
 
 @app.post("/convert")
@@ -64,7 +69,10 @@ async def convert(request: Request, files: list[UploadFile]) -> Response:
             request=request,
             name="index.html",
             status_code=400,
-            context={"error": "Bitte mindestens eine HTML-Datei (.html/.htm) auswählen."},
+            context={
+                "error": "Bitte mindestens eine HTML-Datei (.html/.htm) auswählen.",
+                "privacy_url": PRIVACY_URL,
+            },
         )
 
     buffer = io.BytesIO()

@@ -397,6 +397,18 @@ main { flex: 1 0 auto; }
 .upload__filelist li::before { content: "📄"; }
 .upload__actions { margin-top: var(--space-l); display: flex; gap: var(--space-m); flex-wrap: wrap; }
 
+.privacy-note {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-s);
+    margin-top: var(--space-l);
+    padding-top: var(--space-m);
+    border-top: 1px solid var(--border-subtle);
+    color: var(--text-tertiary);
+    font-size: var(--font-size-body-small);
+}
+.privacy-note svg { flex-shrink: 0; margin-top: 2px; color: var(--color-teal-600); }
+
 /* --- Alerts --- */
 .alert {
     padding: var(--space-m) var(--space-l);
