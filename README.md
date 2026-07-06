@@ -34,6 +34,23 @@ Argumente:
 - `input_dir` — Verzeichnis mit den HTML-Dateien (`.html`/`.htm`).
 - `--output` / `-o` — Zieldatei (Standard: `ergebnisse.xlsx`).
 
+## Werkzeuge (intern)
+
+### `tools/anonymize_results.py`
+
+Bereitet echte HTML-Ergebnisdateien als anonymisierte Testfixtures auf: Personen
+(Name, UCI-ID) und Vereine werden konsistent durch Fantasiewerte ersetzt,
+Event-/Orts-/Verbandsbezüge neutralisiert. Optional werden Fake-PDFs mit gleichen
+Basennamen erzeugt (Filter-Test). Die anonymisierten Fixtures liegen unter
+`tests/fixtures/html_results/`.
+
+```bash
+uv run python tools/anonymize_results.py <quell-ordner> tests/fixtures/html_results
+uv run python tools/anonymize_results.py <quell-ordner> <ziel> --no-pdf
+```
+
+> Hinweis: Echte, nicht-anonymisierte Ergebnisdateien gehören **nicht** ins Repo.
+
 ## Entwicklung
 
 ```bash
