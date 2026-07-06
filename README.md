@@ -9,6 +9,7 @@ bei Radsportveranstaltungen.
 - **Python:** 3.14+
 - **CLI:** cyclopts
 - **Daten:** pandas + openpyxl
+- **Web:** FastAPI + Jinja2 + HTMX (Design aus dem SemanticWorks Corporate Identity)
 
 ## Installation
 
@@ -33,6 +34,17 @@ Argumente:
 
 - `input_dir` — Verzeichnis mit den HTML-Dateien (`.html`/`.htm`).
 - `--output` / `-o` — Zieldatei (Standard: `ergebnisse.xlsx`).
+
+### Weboberfläche
+
+Dieselbe HTML→Excel-Funktion als lokale Weboberfläche (FastAPI + Jinja2 + HTMX,
+Design aus dem SemanticWorks Corporate Identity). HTML-Dateien im Browser
+auswählen/hineinziehen und die fertige Excel-Datei herunterladen — alles läuft
+lokal, es werden keine Daten hochgeladen.
+
+```bash
+uv run cycling-web            # Server auf http://127.0.0.1:8000
+```
 
 ## Werkzeuge (intern)
 

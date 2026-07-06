@@ -8,8 +8,10 @@ dropped — the guarantee is: one sheet per HTML input.
 
 from __future__ import annotations
 
+import io
 import re
 from pathlib import Path
+from typing import BinaryIO
 
 import pandas as pd
 
@@ -50,25 +52,35 @@ def sanitize_sheet_name(name: str, used: set[str]) -> str:
     return candidate
 
 
-def read_html_tables(path: Path) -> list[pd.DataFrame]:
-    """Read all tables from an HTML file as DataFrames.
+def tables_from_html(html: str) -> list[pd.DataFrame]:
+    """Read all tables from an HTML string as DataFrames.
 
-    Returns an empty list if the file contains no parseable tables.
+    Returns an empty list if the string contains no parseable tables.
     """
     try:
-        return pd.read_html(path)
+        return pd.read_html(io.StringIO(html))
     except ValueError:
         # pandas raises ValueError("No tables found") when there is no table.
         return []
 
 
-def read_html_text(path: Path) -> pd.DataFrame:
-    """Fallback: extract visible text from an HTML file into a single column."""
+def text_from_html(html: str) -> pd.DataFrame:
+    """Fallback: extract visible text from an HTML string into a single column."""
     from bs4 import BeautifulSoup
 
-    soup = BeautifulSoup(path.read_text(encoding="utf-8", errors="replace"), "html.parser")
+    soup = BeautifulSoup(html, "html.parser")
     lines = [line.strip() for line in soup.get_text("\n").splitlines() if line.strip()]
     return pd.DataFrame({"Inhalt": lines})
+
+
+def read_html_tables(path: Path) -> list[pd.DataFrame]:
+    """Read all tables from an HTML file as DataFrames."""
+    return tables_from_html(path.read_text(encoding="utf-8", errors="replace"))
+
+
+def read_html_text(path: Path) -> pd.DataFrame:
+    """Fallback: extract visible text from an HTML file into a single column."""
+    return text_from_html(path.read_text(encoding="utf-8", errors="replace"))
 
 
 def find_html_files(input_dir: Path) -> list[Path]:
@@ -99,6 +111,46 @@ def _write_sheet(
         start_row += len(table) + 1 + _TABLE_GAP
 
 
+def convert_html_sources(
+    sources: list[tuple[str, str]],
+    output: Path | BinaryIO,
+) -> int:
+    """Write one worksheet per HTML source into an Excel workbook.
+
+    Args:
+        sources: ``(name, html)`` pairs — ``name`` becomes the sheet name (its
+            stem is used), ``html`` is the file's HTML content.
+        output: Destination path or writable binary stream for the ``.xlsx``.
+
+    Returns:
+        The number of worksheets written.
+
+    Raises:
+        ValueError: If ``sources`` is empty.
+    """
+    if not sources:
+        raise ValueError("Keine HTML-Quellen übergeben")
+
+    logger = get_logger()
+    logger.step(f"Konvertiere {len(sources)} HTML-Datei(en)")
+
+    used_names: set[str] = set()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        for name, html in sources:
+            tables = tables_from_html(html)
+            if tables:
+                detail = f"{len(tables)} Tabelle(n)"
+            else:
+                tables = [text_from_html(html)]
+                detail = "kein Tabelleninhalt, Text übernommen"
+
+            sheet_name = sanitize_sheet_name(Path(name).stem, used_names)
+            _write_sheet(writer, sheet_name, tables)
+            logger.substep(f"{name} → Sheet '{sheet_name}' ({detail})")
+
+    return len(sources)
+
+
 def convert_directory(input_dir: Path, output: Path) -> Path:
     """Convert every HTML file in ``input_dir`` into one sheet of ``output``.
 
@@ -124,22 +176,12 @@ def convert_directory(input_dir: Path, output: Path) -> Path:
             f"Keine HTML-Dateien ({', '.join(HTML_SUFFIXES)}) in {input_dir} gefunden"
         )
 
-    logger.step(f"Konvertiere {len(html_files)} HTML-Datei(en)")
     output.parent.mkdir(parents=True, exist_ok=True)
-
-    used_names: set[str] = set()
-    with pd.ExcelWriter(output, engine="openpyxl") as writer:
-        for path in html_files:
-            tables = read_html_tables(path)
-            if tables:
-                detail = f"{len(tables)} Tabelle(n)"
-            else:
-                tables = [read_html_text(path)]
-                detail = "kein Tabelleninhalt, Text übernommen"
-
-            sheet_name = sanitize_sheet_name(path.stem, used_names)
-            _write_sheet(writer, sheet_name, tables)
-            logger.substep(f"{path.name} → Sheet '{sheet_name}' ({detail})")
+    sources = [
+        (path.name, path.read_text(encoding="utf-8", errors="replace"))
+        for path in html_files
+    ]
+    convert_html_sources(sources, output)
 
     logger.success(f"Excel-Datei erstellt: {output}")
     return output

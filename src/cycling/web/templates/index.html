@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}HTML → Excel · Kommissärs Helferlein{% endblock %}
+
+{% block body %}
+<section class="hero">
+    <div class="container">
+        <p class="overline">Ergebnis-Werkzeug</p>
+        <h1>HTML-Ergebnisse in eine Excel-Datei</h1>
+        <p class="subheadline">
+            HTML-Ergebnisdateien auswählen — je Datei entsteht ein Arbeitsblatt
+            in einer einzigen Excel-Mappe. Alles läuft lokal auf deinem Rechner.
+        </p>
+    </div>
+</section>
+
+<main id="main-content" class="section">
+    <div class="container container--narrow">
+        <div class="card card--pull-up">
+            {% if error %}
+            <p class="alert alert--error" role="alert">{{ error }}</p>
+            {% endif %}
+
+            <h2 class="card__title">Dateien konvertieren</h2>
+            <p class="card__lead">
+                Wähle die HTML-Dateien eines Rennens aus. PDF- und andere Dateien
+                werden automatisch ignoriert.
+            </p>
+
+            <form action="/convert" method="post" enctype="multipart/form-data">
+                <label class="upload__dropzone" data-dropzone>
+                    <svg class="upload__icon" width="40" height="40" viewBox="0 0 24 24"
+                         fill="none" stroke="currentColor" stroke-width="1.8"
+                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 16V4m0 0L8 8m4-4 4 4"/>
+                        <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
+                    </svg>
+                    <strong>HTML-Dateien auswählen</strong>
+                    <span class="upload__hint">oder hierher ziehen · Mehrfachauswahl möglich</span>
+                    <input type="file" name="files" accept=".html,.htm" multiple required>
+                </label>
+
+                <ul class="upload__filelist" data-filelist aria-live="polite"></ul>
+
+                <div class="upload__actions">
+                    <button type="submit" class="btn btn--primary" data-submit>Excel erzeugen</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="card mt-l">
+            <h3 class="card__title">So funktioniert es</h3>
+            <ol class="steps mt-l">
+                <li>
+                    <span class="steps__num">1</span>
+                    <span>HTML-Ergebnisdateien auswählen (z.&nbsp;B. je Rennen/Lauf eine Datei).</span>
+                </li>
+                <li>
+                    <span class="steps__num">2</span>
+                    <span>„Excel erzeugen" klicken — die Tabellen jeder Datei werden ausgelesen.</span>
+                </li>
+                <li>
+                    <span class="steps__num">3</span>
+                    <span>Die Datei <code>ergebnisse.xlsx</code> wird heruntergeladen — ein Arbeitsblatt je HTML-Datei.</span>
+                </li>
+            </ol>
+        </div>
+    </div>
+</main>
+{% endblock %}

@@ -12,10 +12,15 @@ dependencies = [
     "beautifulsoup4>=4.12.0",
     "html5lib>=1.1",
     "pydantic-settings>=2.7.0",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "jinja2>=3.1.0",
+    "python-multipart>=0.0.12",
 ]
 
 [project.scripts]
 cycling = "cycling.cli:app"
+cycling-web = "cycling.web.main:run"
 
 [build-system]
 requires = ["hatchling"]
@@ -29,6 +34,7 @@ dev = [
     "mypy>=1.13.0",
     "pytest>=8.3.0",
     "pandas-stubs>=2.2.0",
+    "httpx>=0.27.0",
 ]
 
 [tool.mypy]

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Kommissärs Helferlein{% endblock %}</title>
+    <meta name="description" content="{% block description %}Werkzeuge für die Arbeit als Kommissär bei Radsportveranstaltungen.{% endblock %}">
+    <meta name="robots" content="noindex, nofollow">
+
+    <link rel="icon" href="{{ static_v('images/favicon.svg') }}" type="image/svg+xml">
+    <link rel="stylesheet" href="{{ static_v('css/style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <a href="#main-content" class="skip-link">Zum Inhalt springen</a>
+
+    <header class="site-header">
+        <div class="container">
+            <a href="/" class="site-header__logo" aria-label="Startseite">
+                <svg viewBox="0 0 64 64" width="36" height="36" aria-hidden="true">
+                    <defs>
+                        <linearGradient id="wheel" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#256dbd"/>
+                            <stop offset="100%" stop-color="#3ab0a2"/>
+                        </linearGradient>
+                    </defs>
+                    <g fill="none" stroke="url(#wheel)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="19" cy="42" r="10"/>
+                        <circle cx="45" cy="42" r="10"/>
+                        <path d="M19 42 L30 24 L45 42 M30 24 L38 24 M24 30 L36 30"/>
+                    </g>
+                </svg>
+                <span>Kommissärs&nbsp;Helferlein</span>
+            </a>
+            <nav class="site-nav" aria-label="Hauptnavigation">
+                <a href="/"{% if request.url.path == "/" %} class="active" aria-current="page"{% endif %}>HTML&nbsp;→&nbsp;Excel</a>
+            </nav>
+        </div>
+    </header>
+
+    {% block body %}{% endblock %}
+
+    <footer class="site-footer">
+        <div class="container">
+            <div class="site-footer__inner">
+                <a href="/" class="site-footer__logo">
+                    <span>Kommissärs Helferlein</span>
+                </a>
+                <p class="site-footer__tagline">Werkzeuge für Radsport-Kommissäre.</p>
+                <p class="site-footer__legal">&copy; 2026 · lokal betrieben, keine Daten verlassen den Rechner</p>
+                <p class="site-footer__eu">&#127465;&#127466; Radsport</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ static_v('js/htmx.min.js') }}"></script>
+    <script src="{{ static_v('js/main.js') }}"></script>
+</body>
+</html>
