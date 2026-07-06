@@ -14,6 +14,8 @@ from pathlib import Path
 from typing import BinaryIO
 
 import pandas as pd
+from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.worksheet import Worksheet
 
 from cycling.logging import get_logger
 
@@ -23,6 +25,10 @@ _FORBIDDEN_SHEET_CHARS = re.compile(r"[:\\/?*\[\]]")
 _MAX_SHEET_NAME_LEN = 31
 # Blank rows inserted between multiple tables stacked on one sheet.
 _TABLE_GAP = 1
+# Column auto-fit: padding added to the longest value, and a sane upper bound
+# so a single long cell can't blow a column up to an unreadable width.
+_COL_PADDING = 2
+_MAX_COL_WIDTH = 60
 
 HTML_SUFFIXES = (".html", ".htm")
 
@@ -93,6 +99,32 @@ def find_html_files(input_dir: Path) -> list[Path]:
     return sorted(files)
 
 
+def _column_widths(tables: list[pd.DataFrame]) -> dict[int, int]:
+    """Longest text length per column position across all stacked tables.
+
+    Stacked tables all start at column A, so the width for a position is the
+    maximum over every table that has a column there — considering both the
+    header label and the string form of each cell value.
+    """
+    widths: dict[int, int] = {}
+    for table in tables:
+        for pos, column in enumerate(table.columns):
+            longest = len(str(column))
+            for value in table[column]:
+                if pd.isna(value):
+                    continue
+                longest = max(longest, len(str(value)))
+            widths[pos] = max(widths.get(pos, 0), longest)
+    return widths
+
+
+def _autofit_columns(worksheet: Worksheet, tables: list[pd.DataFrame]) -> None:
+    """Set each column's width to fit its widest value (capped)."""
+    for pos, longest in _column_widths(tables).items():
+        width = min(longest + _COL_PADDING, _MAX_COL_WIDTH)
+        worksheet.column_dimensions[get_column_letter(pos + 1)].width = width
+
+
 def _write_sheet(
     writer: pd.ExcelWriter,
     sheet_name: str,
@@ -109,6 +141,8 @@ def _write_sheet(
         )
         # +1 for the header row that to_excel writes.
         start_row += len(table) + 1 + _TABLE_GAP
+
+    _autofit_columns(writer.sheets[sheet_name], tables)
 
 
 def convert_html_sources(
