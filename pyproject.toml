@@ -1,0 +1,44 @@
+[project]
+name = "cycling"
+version = "0.1.0"
+description = "Kommissärs Helferlein — Werkzeuge für die Arbeit als Kommissär bei Radsportveranstaltungen"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "cyclopts>=3.0.0",
+    "pandas>=2.2.0",
+    "openpyxl>=3.1.0",
+    "lxml>=5.0.0",
+    "beautifulsoup4>=4.12.0",
+    "html5lib>=1.1",
+    "pydantic-settings>=2.7.0",
+]
+
+[project.scripts]
+cycling = "cycling.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cycling"]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.13.0",
+    "pytest>=8.3.0",
+    "pandas-stubs>=2.2.0",
+]
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+ignore_missing_imports = true
+disable_error_code = ["misc"]
+
+[tool.black]
+line-length = 88
+
+[tool.isort]
+profile = "black"
